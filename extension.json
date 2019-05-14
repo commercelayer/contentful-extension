@@ -1,27 +1,27 @@
 {
   "id": "commercelayer-ui-extension",
-  "name": "Commerce Layer UI Extension",
+  "name": "Commerce Layer SKU",
   "srcdoc": "./index.html",
-  "fieldTypes": ["Symbol"],
+  "fieldTypes": ["Object"],
   "parameters": {
     "instance": [
       {
         "id": "clientID",
-        "name": "Commerce Layer Client ID",
+        "name": "Client ID",
         "type": "Symbol",
-        "default": ""
+        "description": "The Client ID of your application on Commerce Layer"
       },
       {
         "id": "clientSecret",
-        "name": "Commerce Layer Client Secret",
+        "name": "Client secret",
         "type": "Symbol",
-        "default": ""
+        "description": "The Client secret of your application on Commerce Layer"
       },
       {
         "id": "endpoint",
-        "name": "Commerce Layer Endpoint",
+        "name": "Endpoint",
         "type": "Symbol",
-        "default": ""
+        "description": "The Endpoint of your organization on Commerce Layer"
       }
     ]
   }
