@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Commerce Layer UI Extension</title>
+    <link rel="stylesheet" href="https://contentful.github.io/ui-extensions-sdk/cf-extension.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.4/css/bulma.min.css">
+    <script src="https://unpkg.com/contentful-ui-extensions-sdk@3"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.13.1/lodash.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+
+    <style media="screen">
+      .sku {
+        border: 1px solid #eeeeee;
+        margin: 10px;
+        padding: 20px;
+        cursor: pointer;
+      }
+      .sku:hover {
+        border: 1px solid #b4c3ca;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div class="cf-form-field">
+        <input type="text" class="cf-form-input" v-model="query">
+        <div class="cf-form-hint">Start typing an SKU code, name, or reference.</div>
+      </div>
+
+      <div class="columns is-multiline is-gapless">
+        <sku-item
+          v-for="sku in skus"
+          v-bind:sku="sku"
+          v-bind:key="sku.id">
+        </sku-item>
+      </div>
+    </div>
+
+    <script type="text/javascript">
+      window.contentfulExtension.init(function(extension) {
+        extension.window.startAutoResizer()
+
+        Vue.component('sku-item', {
+          props: ['sku'],
+          template: `<div class="column is-one-third">
+            <div class="sku">
+              <img :src="sku.attributes.image_url"></img>
+              <h3 class="has-text-weight-semibold">{{ sku.attributes.name }}</h3>
+              <p class="help">{{ sku.attributes.code }}</p>
+            </div>
+          </div>`
+        })
+
+        var app = new Vue({
+          el: '#app',
+          data: {
+            query: null,
+            accessToken: null,
+            skus: []
+          },
+          created: function() {
+            // Get an access token (valid for 2 hours)
+            axios
+              .post(`${extension.parameters.instance.endpoint}/oauth/token`, {
+                grant_type: 'client_credentials',
+                client_id: extension.parameters.instance.clientID,
+                client_secret: extension.parameters.instance.clientSecret
+              })
+              .then(response => {
+                this.accessToken = response.data.access_token
+              })
+            // Assign the debounced function
+            this.debouncedGetSkus = _.debounce(this.getSkus, 500)
+          },
+          methods: {
+            getSkus: function () {
+              if (this.query == '') {
+                this.skus = []
+              } else {
+                axios
+                  .get(`${extension.parameters.instance.endpoint}/api/skus`, {
+                    params: {
+                      'filter[q][name_or_code_cont]': this.query,
+                      'page[size]': 9
+                    },
+                    headers: {
+                      'Accept': 'application/vnd.api+json',
+                      'Authorization': `Bearer ${this.accessToken}`
+                    }
+                  })
+                  .then(response => {
+                    this.skus = response.data.data
+                    extension.window.startAutoResizer()
+                  })
+              }
+            }
+          },
+          watch: {
+            query: function (newQuery, oldQuery) {
+              this.debouncedGetSkus()
+            }
+          }
+        })
+      })
+    </script>
+  </body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "id": "commercelayer-ui-extension",
+  "name": "Commerce Layer UI Extension",
+  "srcdoc": "./index.html",
+  "fieldTypes": ["Symbol"],
+  "parameters": {
+    "instance": [
+      {
+        "id": "clientID",
+        "name": "Commerce Layer Client ID",
+        "type": "Symbol",
+        "default": ""
+      },
+      {
+        "id": "clientSecret",
+        "name": "Commerce Layer Client Secret",
+        "type": "Symbol",
+        "default": ""
+      },
+      {
+        "id": "endpoint",
+        "name": "Commerce Layer Endpoint",
+        "type": "Symbol",
+        "default": ""
+      }
+    ]
+  }
+}
