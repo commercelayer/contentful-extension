@@ -188,7 +188,7 @@
               axios
                 .get(url, {
                   params: {
-                    'filter[q][name_or_code_cont]': this.query,
+                    'filter[q][name_or_code_or_reference_cont]': this.query,
                     'page[size]': 9
                   },
                   headers: {
