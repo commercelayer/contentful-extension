@@ -11,8 +11,17 @@
     <script src="https://cdn.jsdelivr.net/npm/lodash@4.13.1/lodash.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue"></script>
     <style media="screen">
+      body {
+        overflow: hidden;
+        font-family: "Avenir Next W01", Helvetica, sans-serif;
+      }
+      .name {
+        min-height: 72px;
+        font-weight: 600;
+      }
       .sku,
       .selected-sku {
+        min-height: 350px;
         border: 1px solid #eeeeee;
         margin: 10px;
         padding: 20px;
@@ -23,9 +32,13 @@
       .sku:hover {
         border: 1px solid #b4c3ca;
       }
+      .pagination {
+        margin: 5px;
+      }
     </style>
   </head>
   <body>
+
     <div id="app">
       <div v-if="selectedSku">
         <div class="columns is-gapless">
@@ -39,8 +52,9 @@
       <div v-else>
         <div class="cf-form-field">
           <input type="text" class="cf-form-input" v-model="query">
-          <div class="cf-form-hint">Start typing an SKU code, name, or reference.</div>
+          <div class="cf-form-hint">Found {{ meta.record_count }} SKUs. Filter by name, code, or reference.</div>
         </div>
+
         <div class="columns is-multiline is-gapless">
           <sku-item
             v-for="sku in skus"
@@ -50,6 +64,14 @@
             @select-sku="selectSku">
           </sku-item>
         </div>
+
+        <nav class="pagination is-small">
+          <ul class="pagination-list">
+            <li><a class="pagination-link" v-bind:disabled="links.prev == undefined" @click="prevPage">&larr; Prev</a></li>
+            <li><a class="pagination-link" v-bind:disabled="links.next == undefined" @click="nextPage">Next &rarr;</a></li>
+          </ul>
+        </nav>
+
       </div>
     </div>
 
@@ -63,7 +85,7 @@
           template: `<div class="column is-one-third">
             <div class="sku" @click="selectSku">
               <img :src="sku.attributes.image_url"></img>
-              <h3 class="has-text-weight-semibold">{{ sku.attributes.name }}</h3>
+              <p class="name">{{ sku.attributes.name }}</p>
               <p class="help">{{ sku.attributes.code }}</p>
             </div>
           </div>`,
@@ -80,11 +102,12 @@
           template: `<div class="column is-one-third">
             <div class="selected-sku">
               <img :src="sku.attributes.image_url"></img>
-              <h3 class="has-text-weight-semibold">{{ sku.attributes.name }}</h3>
+              <p class="name">{{ sku.attributes.name }}</p>
               <p class="help">{{ sku.attributes.code }}</p>
               <p class="help">
-                <a :href="skuEditURL" target="_blank">Edit</a> |
-                <a @click="unselectSku">Remove</a>
+                <a :href="skuEditURL" target="_blank">Edit</a>
+                &middot;
+                <a @click="unselectSku" class="has-text-danger">Remove</a>
               </p>
             </div>
           </div>`,
@@ -107,7 +130,9 @@
             endpoint: null,
             query: null,
             selectedSkuId: null,
-            skus: []
+            skus: [],
+            links: {},
+            meta: {}
           },
           computed: {
             selectedSku () {
@@ -117,8 +142,14 @@
             }
           },
           created: function() {
+            // Set endpoint
             this.endpoint = extension.parameters.instance.endpoint
+
+            // Assign the debounced function
+            this.debouncedGetSkus = _.debounce(this.getSkus, 500)
+
             // Get an access token (valid for 2 hours)
+            // Get the selected SKU or the list of all SKUs
             axios
               .post(`${this.endpoint}/oauth/token`, {
                 grant_type: 'client_credentials',
@@ -132,10 +163,10 @@
                   skuId = fieldValue.id
                   this.getSku(skuId)
                   this.selectedSkuId = skuId
+                } else {
+                  this.getSkus()
                 }
               })
-            // Assign the debounced function
-            this.debouncedGetSkus = _.debounce(this.getSkus, 500)
           },
           methods: {
             getSku: function(skuId) {
@@ -148,39 +179,44 @@
                 })
                 .then(response => {
                   this.skus.push(response.data.data)
-                  extension.window.startAutoResizer()
                 })
             },
-            getSkus: function() {
-              if (this.query == '') {
-                this.skus = []
-              } else {
-                axios
-                  .get(`${this.endpoint}/api/skus`, {
-                    params: {
-                      'filter[q][name_or_code_cont]': this.query,
-                      'page[size]': 9
-                    },
-                    headers: {
-                      'Accept': 'application/vnd.api+json',
-                      'Authorization': `Bearer ${this.accessToken}`
-                    }
-                  })
-                  .then(response => {
-                    this.skus = response.data.data
-                    extension.window.startAutoResizer()
-                  })
+            getSkus: function(url) {
+              if (url === undefined) {
+                url = `${this.endpoint}/api/skus`
               }
+              axios
+                .get(url, {
+                  params: {
+                    'filter[q][name_or_code_cont]': this.query,
+                    'page[size]': 9
+                  },
+                  headers: {
+                    'Accept': 'application/vnd.api+json',
+                    'Authorization': `Bearer ${this.accessToken}`
+                  }
+                })
+                .then(response => {
+                  this.skus = response.data.data
+                  this.links = response.data.links
+                  this.meta = response.data.meta
+                })
+            },
+            prevPage: function() {
+              this.getSkus(this.links.prev)
+            },
+            nextPage: function() {
+              this.getSkus(this.links.next)
             },
             selectSku: function(skuId) {
               this.selectedSkuId = skuId
               this.setFieldValue()
             },
             unselectSku: function() {
-              this.skus = []
               this.selectedSkuId = null
               extension.field.setValue(null)
               this.query = null
+              this.getSkus()
             },
             setFieldValue: function() {
               extension.field.setValue({
