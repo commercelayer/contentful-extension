@@ -35,13 +35,16 @@
       .pagination {
         margin: 5px;
       }
+      p.help {
+        word-break: break-all;
+      }
     </style>
   </head>
   <body>
 
     <div id="app">
       <div v-if="selectedSku">
-        <div class="columns is-gapless">
+        <div class="columns is-gapless is-mobile">
           <sku-selected
             v-bind:sku="selectedSku"
             v-bind:endpoint="endpoint"
