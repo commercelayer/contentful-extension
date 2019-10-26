@@ -26,6 +26,13 @@
         margin: 10px;
         padding: 20px;
       }
+      div.selected-sku {
+        min-height: 525px;
+        padding: 0 5rem 1.5rem;
+      }
+      .selected-sku > .name {
+      	min-height: 0px;
+      }
       .sku {
         cursor: pointer;
       }
@@ -44,7 +51,7 @@
 
     <div id="app">
       <div v-if="selectedSku">
-        <div class="columns is-gapless is-mobile">
+        <div class="columns is-gapless">
           <sku-selected
             v-bind:sku="selectedSku"
             v-bind:endpoint="endpoint"
@@ -58,7 +65,7 @@
           <div class="cf-form-hint">Found {{ meta.record_count }} SKUs. Filter by name, code, or reference.</div>
         </div>
 
-        <div class="columns is-multiline is-gapless">
+        <div class="columns is-multiline is-gapless is-mobile">
           <sku-item
             v-for="sku in skus"
             v-bind:sku="sku"
